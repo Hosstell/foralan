@@ -52,3 +52,6 @@ driver.refresh()
 
 
 send_message(nickname, message)
+
+time.sleep(1)
+driver.close()
