@@ -1,0 +1,8 @@
+list:
+  - name: account_some_name
+    status: true
+    tokens: "./accounts/1.txt"
+
+  - name: account_some_name_2
+    status: true
+    tokens: "./accounts/2.txt"
