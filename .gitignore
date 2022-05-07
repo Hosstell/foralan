@@ -1,2 +1,3 @@
 ./chromedriver/chromedriver.exe
 ./sending/accounts/*
+./parsing/account.txt
