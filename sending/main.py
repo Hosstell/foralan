@@ -71,18 +71,12 @@ class TelegramMessageSender:
         assert len(account), f"Аккаунта с именем {name} не найдено"
         return account[0]
 
-    def send_message(self):
+    def send_message(self, user_id):
         self.wait_element(By.CLASS_NAME, "new-message-wrapper")
         self.driver.find_elements_by_class_name("input-message-input")[2].send_keys(message)
-        time.sleep(0.5)
-        self.driver.find_element_by_class_name("btn-send").click()
-        time.sleep(0.5)
-
-        chat_info = self.driver.find_elements_by_class_name("chat-info")[1]
-        current_human_id = chat_info.find_element_by_class_name("person-avatar").get_attribute("data-peer-id")
-        self.save_in_store(current_human_id)
-
-        self.driver.find_elements_by_class_name("sidebar-close-button")[1].click()
+        time.sleep(1)
+        self.driver.find_elements_by_class_name("btn-send")[1].click()
+        time.sleep(1)
 
     def set_in_localstorage(self, key, value):
         self.driver.execute_script("window.localStorage.setItem(arguments[0], arguments[1]);", key, value)
@@ -107,8 +101,13 @@ class TelegramMessageSender:
         for user_id in self.people_ids:
             if not self.is_people_id_used(user_id):
                 try:
+                    self.open_group()
+                    time.sleep(0.5)
+                    self.driver.find_element_by_class_name("chat-info").click()
+                    time.sleep(0.5)
+
                     self.open_chat(user_id)
-                    self.send_message()
+                    self.send_message(user_id)
                     self.save_in_store(user_id)
                 except Exception as e:
                     print("Ошибка отправки сообщения. user id = ", user_id)

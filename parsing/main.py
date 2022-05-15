@@ -74,9 +74,9 @@ class TelegramMessageSender:
         print("Я кончил")
 
     def parse_group_users(self):
-        time.sleep(5)
+        time.sleep(10)
         self.driver.find_element_by_class_name("chat-info").click()
-        time.sleep(1)
+        time.sleep(2)
 
         count = 1000
 
@@ -86,7 +86,7 @@ class TelegramMessageSender:
             users_list = self.driver.find_element_by_class_name("search-super-content-members")
             people = users_list.find_elements_by_class_name("chatlist-chat")
 
-            print(f"В телешрамме загружано {len(people)} пользователей")
+            print(f"В телеграмме загружано {len(people)} пользователей")
             ids_history.append(len(people))
             if len(people) > count:
                 ids = self.get_ids(users_list)
