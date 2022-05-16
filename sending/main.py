@@ -12,7 +12,7 @@ chromedriver_path = "./../chromedriver/chromedriver.exe"
 people_ids_path = "people.txt"
 used_people_ids_path = "used_people.txt"
 message = open("message.txt", "r", encoding="utf8").read()
-group_id = open("group_id.txt", "r").read()
+group_id = open("group_id.txt", "r").read().strip()
 
 
 class TelegramMessageSender:
@@ -72,7 +72,7 @@ class TelegramMessageSender:
         return account[0]
 
     def send_message(self, user_id):
-        self.wait_element(By.CLASS_NAME, "new-message-wrapper")
+        time.sleep(1)
         self.driver.find_elements_by_class_name("input-message-input")[2].send_keys(message)
         time.sleep(1)
         self.driver.find_elements_by_class_name("btn-send")[1].click()
@@ -92,7 +92,7 @@ class TelegramMessageSender:
         return people.find_elements_by_class_name("chatlist-chat")
 
     def run(self):
-        time.sleep(10)
+        time.sleep(5)
         self.open_group()
         time.sleep(2)
         self.driver.find_element_by_class_name("chat-info").click()
