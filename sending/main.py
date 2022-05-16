@@ -92,11 +92,11 @@ class TelegramMessageSender:
         return people.find_elements_by_class_name("chatlist-chat")
 
     def run(self):
-        time.sleep(5)
+        time.sleep(10)
         self.open_group()
-        time.sleep(1)
+        time.sleep(2)
         self.driver.find_element_by_class_name("chat-info").click()
-        time.sleep(0.5)
+        time.sleep(2)
 
         for user_id in self.people_ids:
             if not self.is_people_id_used(user_id):
