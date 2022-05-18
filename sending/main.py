@@ -22,6 +22,7 @@ class TelegramMessageSender:
         self.accounts = {}
         self.driver = None
         self.active_chat_index = 0
+        self.used_people_ids = []
         self.people_ids = open(people_ids_path, 'r').read().split("\n")
         self.people_load_status = [False for _ in range(len(self.people_ids))]
 
@@ -71,12 +72,29 @@ class TelegramMessageSender:
         assert len(account), f"Аккаунта с именем {name} не найдено"
         return account[0]
 
+    def update_used_people(self):
+        self.used_people_ids = open(used_people_ids_path, "r").read().split("\n")
+
+    def is_people_id_used(self, people_id):
+        return people_id in self.used_people_ids
+
+    def save_in_store(self, people_id):
+        used_people_ids = open(used_people_ids_path, "r").read().split("\n")
+        used_people_ids.append(people_id)
+        used_people_ids = list(set(used_people_ids))
+
+        file = open(used_people_ids_path, 'w')
+        file.write("\n".join(used_people_ids))
+        file.close()
+
+        self.update_used_people()
+
     def send_message(self, user_id):
-        time.sleep(1)
+        time.sleep(0.2)
         self.driver.find_elements_by_class_name("input-message-input")[2].send_keys(message)
-        time.sleep(1)
+        time.sleep(0.5)
         self.driver.find_elements_by_class_name("btn-send")[1].click()
-        time.sleep(1)
+        time.sleep(0.2)
 
     def set_in_localstorage(self, key, value):
         self.driver.execute_script("window.localStorage.setItem(arguments[0], arguments[1]);", key, value)
@@ -95,17 +113,14 @@ class TelegramMessageSender:
         time.sleep(5)
         self.open_group()
         time.sleep(2)
-        self.driver.find_element_by_class_name("chat-info").click()
+        self.open_chat_info()
         time.sleep(2)
 
-        for user_id in self.people_ids:
+        for user_id in self.get_next_people_ids():
             if not self.is_people_id_used(user_id):
                 try:
                     self.open_group()
-                    time.sleep(0.5)
-                    self.driver.find_element_by_class_name("chat-info").click()
-                    time.sleep(0.5)
-
+                    self.open_chat_info()
                     self.open_chat(user_id)
                     self.send_message(user_id)
                     self.save_in_store(user_id)
@@ -118,9 +133,40 @@ class TelegramMessageSender:
 
         print("Всё!")
 
-    def open_chat(self, user_id):
+    def open_group(self):
+        groups = self.driver.find_elements_by_class_name("chatlist-chat")
+        for group in groups:
+            if group_id == group.get_attribute("data-peer-id"):
+                group.click()
+                break
+
+    def open_chat_info(self):
+        time.sleep(0.2)
         self.driver.find_element_by_class_name("chat-info").click()
-        self.load_user(user_id)
+
+    def get_next_people_ids(self):
+        people_ids = []
+        last_counts = []
+        while True:
+            ids = self.get_current_people_ids()
+            ids = list(set(ids).difference(set(self.used_people_ids)))
+            people_ids.extend(ids)
+            if len(people_ids) > 200:
+                return people_ids
+
+            last_counts.append(len(people_ids))
+
+            if len(last_counts) > 2 and last_counts[-1] == 0 and last_counts[-2] == 0 and last_counts[-3] == 0:
+                raise Exception("Не осталось больше пользователей кому можно отправить сообщение")
+
+            if len(last_counts) > 2 and last_counts[-1] == last_counts[-2] and last_counts[-2] == last_counts[-3]:
+                return people_ids
+
+    def get_current_people_ids(self):
+        users_list = self.driver.find_element_by_class_name("search-super-content-members")
+        return self.get_ids(users_list)
+
+    def open_chat(self, user_id):
         people = self.driver.find_element_by_class_name("search-super-content-members")
         user_item = people.find_elements_by_class_name("chatlist-chat")[0]
         self.set_attribute(user_item, "data-peer-id", user_id)
@@ -154,27 +200,6 @@ class TelegramMessageSender:
             self.scroll_to_element(users[-1])
             time.sleep(1)
 
-
-    def is_people_id_used(self, people_id):
-        used_people_ids = open(used_people_ids_path, "r").read().split("\n")
-        return people_id in used_people_ids
-
-    def save_in_store(self, people_id):
-        used_people_ids = open(used_people_ids_path, "r").read().split("\n")
-        used_people_ids.append(people_id)
-        used_people_ids = list(set(used_people_ids))
-
-        file = open(used_people_ids_path, 'w')
-        file.write("\n".join(used_people_ids))
-        file.close()
-
-    def open_group(self):
-        groups = self.driver.find_elements_by_class_name("chatlist-chat")
-        for group in groups:
-            if group_id == group.get_attribute("data-peer-id"):
-                group.click()
-                break
-
     def clone_element(self, element, into=None):
         if into:
             self.driver.execute_script("""
@@ -201,6 +226,12 @@ class TelegramMessageSender:
 
     def scroll_to_element(self, element):
         ActionChains(self.driver).move_to_element(element).perform()
+
+    def remove_element(self, element):
+        self.driver.execute_script("""
+            var element = arguments[0];
+            element.parentNode.removeChild(element);
+        """, element)
 
 
 sender = TelegramMessageSender()
