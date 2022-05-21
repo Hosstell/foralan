@@ -15,6 +15,10 @@ message = open("message.txt", "r", encoding="utf8").read()
 group_id = open("group_id.txt", "r").read().strip()
 
 
+class BanException(Exception):
+    pass
+
+
 class TelegramMessageSender:
     def __init__(self):
         self.active_account_name = None
@@ -44,7 +48,9 @@ class TelegramMessageSender:
 
     def __set_next_account_name(self):
         self.active_accounts_names.remove(self.active_account_name)
-        assert len(self.active_accounts_names), "Все активные аккаунты закончились"
+        if not len(self.active_accounts_names):
+            self.driver.close()
+            raise BanException("Все активные аккаунты закончились")
         self.active_account_name = self.active_accounts_names[0]
         print("Установлен активный аккаунт. Имя:", self.active_account_name)
 
@@ -95,6 +101,15 @@ class TelegramMessageSender:
         time.sleep(0.5)
         self.driver.find_elements_by_class_name("btn-send")[1].click()
         time.sleep(0.2)
+        self.check_message()
+
+    def check_message(self):
+        chat = self.driver.find_elements_by_class_name("bubbles-inner")[1]
+        message = chat.find_element_by_class_name("inner")
+        script = "return window.getComputedStyle(arguments[0], '::after').getPropertyValue('content')"
+        icon = self.driver.execute_script(script, message).strip()
+        if icon == '"\ue99a"':
+            raise BanException()
 
     def set_in_localstorage(self, key, value):
         self.driver.execute_script("window.localStorage.setItem(arguments[0], arguments[1]);", key, value)
@@ -110,6 +125,15 @@ class TelegramMessageSender:
         return people.find_elements_by_class_name("chatlist-chat")
 
     def run(self):
+        while True:
+            try:
+                self.__run()
+            except Exception as ex:
+                self.__set_next_account_name()
+                self.__set_chromedriver()
+                self.__auth_active_account()
+
+    def __run(self):
         time.sleep(5)
         self.open_group()
         time.sleep(2)
@@ -124,6 +148,8 @@ class TelegramMessageSender:
                     self.open_chat(user_id)
                     self.send_message(user_id)
                     self.save_in_store(user_id)
+                except BanException as ex:
+                    raise Exception("Ban")
                 except Exception as e:
                     print("Ошибка отправки сообщения. user id = ", user_id)
                     print("Ошибка: ", e)
