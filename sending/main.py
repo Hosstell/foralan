@@ -96,6 +96,9 @@ class TelegramMessageSender:
         self.update_used_people()
 
     def send_message(self, user_id):
+        if self.is_message_sended():
+            return
+
         time.sleep(0.2)
         self.driver.find_elements_by_class_name("input-message-input")[2].send_keys(message)
         time.sleep(0.5)
@@ -103,9 +106,14 @@ class TelegramMessageSender:
         time.sleep(1)
         self.check_message()
 
+    def is_message_sended(self):
+        chat = self.driver.find_elements_by_class_name("bubbles-inner")[1]
+        message = chat.find_elements_by_class_name("inner")
+        return len(message)
+
     def check_message(self, retry=3):
         chat = self.driver.find_elements_by_class_name("bubbles-inner")[1]
-        message = chat.find_element_by_class_name("inner")
+        message = chat.find_elements_by_class_name("inner")[-1]
         script = "return window.getComputedStyle(arguments[0], '::after').getPropertyValue('content')"
         icon = self.driver.execute_script(script, message).strip()
         if icon == '"\ue99a"':
