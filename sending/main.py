@@ -65,7 +65,7 @@ class TelegramMessageSender:
 
     def __auth_active_account(self):
         local_storage_path = self.__get_account(self.active_account_name)["tokens"]
-        local_storage = open(local_storage_path, "r").readlines()
+        local_storage = open(local_storage_path, "r", encoding="utf8").readlines()
         local_storage = list(map(lambda x: x.strip().split("\t"), local_storage))
 
         for key, value in local_storage:
@@ -138,7 +138,7 @@ class TelegramMessageSender:
                 self.__auth_active_account()
 
     def __run(self):
-        time.sleep(5)
+        time.sleep(10)
         self.open_group()
         time.sleep(2)
         self.open_chat_info()
@@ -179,6 +179,11 @@ class TelegramMessageSender:
         self.driver.find_element_by_class_name("chat-info").click()
 
     def get_next_people_ids(self):
+        self.open_group()
+        time.sleep(2)
+        self.open_chat_info()
+        time.sleep(2)
+
         people_ids = []
         last_counts = []
         while True:
@@ -196,9 +201,13 @@ class TelegramMessageSender:
             if len(last_counts) > 2 and last_counts[-1] == last_counts[-2] and last_counts[-2] == last_counts[-3]:
                 return people_ids
 
+            self.scroll_to_element(self.get_current_people()[-1])
+
+    def get_current_people(self):
+        return self.driver.find_element_by_class_name("search-super-content-members")
+
     def get_current_people_ids(self):
-        users_list = self.driver.find_element_by_class_name("search-super-content-members")
-        return self.get_ids(users_list)
+        return self.get_ids(self.get_current_people())
 
     def open_chat(self, user_id):
         people = self.driver.find_element_by_class_name("search-super-content-members")
