@@ -100,16 +100,20 @@ class TelegramMessageSender:
         self.driver.find_elements_by_class_name("input-message-input")[2].send_keys(message)
         time.sleep(0.5)
         self.driver.find_elements_by_class_name("btn-send")[1].click()
-        time.sleep(0.2)
+        time.sleep(1)
         self.check_message()
 
-    def check_message(self):
+    def check_message(self, retry=3):
         chat = self.driver.find_elements_by_class_name("bubbles-inner")[1]
         message = chat.find_element_by_class_name("inner")
         script = "return window.getComputedStyle(arguments[0], '::after').getPropertyValue('content')"
         icon = self.driver.execute_script(script, message).strip()
         if icon == '"\ue99a"':
-            raise BanException()
+            if retry > 0:
+                time.sleep(1)
+                self.check_message(retry=retry-1)
+            else:
+                raise BanException()
 
     def set_in_localstorage(self, key, value):
         self.driver.execute_script("window.localStorage.setItem(arguments[0], arguments[1]);", key, value)
