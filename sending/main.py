@@ -164,11 +164,15 @@ class TelegramMessageSender:
         print("Всё!")
 
     def open_group(self):
-        groups = self.driver.find_elements_by_class_name("chatlist-chat")
-        for group in groups:
-            if group_id == group.get_attribute("data-peer-id"):
-                group.click()
-                break
+        while True:
+            groups = self.driver.find_elements_by_class_name("chatlist-chat")
+            for group in groups:
+                if group_id == group.get_attribute("data-peer-id"):
+                    self.scroll_to_element(group)
+                    group.click()
+                    return
+            self.scroll_to_element(groups[-1])
+            time.sleep(0.5)
 
     def open_chat_info(self):
         time.sleep(0.2)
