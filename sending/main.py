@@ -202,12 +202,14 @@ class TelegramMessageSender:
                 return people_ids
 
             self.scroll_to_element(self.get_current_people()[-1])
+            time.sleep(0.3)
 
     def get_current_people(self):
-        return self.driver.find_element_by_class_name("search-super-content-members")
+        users_list = self.driver.find_element_by_class_name("search-super-content-members")
+        return users_list.find_elements_by_class_name("chatlist-chat")
 
     def get_current_people_ids(self):
-        return self.get_ids(self.get_current_people())
+        return self.get_ids(self.driver.find_element_by_class_name("search-super-content-members"))
 
     def open_chat(self, user_id):
         people = self.driver.find_element_by_class_name("search-super-content-members")
