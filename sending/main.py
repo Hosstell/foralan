@@ -5,6 +5,7 @@ import yaml
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -32,7 +33,6 @@ class TelegramMessageSender:
 
         self.__parse_accounts_yml()
         self.__set_chromedriver()
-        self.__auth_active_account()
 
     def __parse_accounts_yml(self):
         with open("accounts.yml", "r") as stream:
@@ -58,25 +58,28 @@ class TelegramMessageSender:
         if (self.driver):
             self.driver.close()
             self.driver = None
-        self.driver = webdriver.Chrome(chromedriver_path)
+
+        active_account = self.__get_active_account()
+        profile_path = active_account["profile_path"]
+        profile_name = profile_path.split("/")[-1]
+        profile_dir = "/".join(profile_path.split("/")[:-1])
+
+        chrome_options = Options()
+        chrome_options.add_argument(f"--user-data-dir={profile_dir}")
+        chrome_options.add_argument(f"--profile-directory={profile_name}")
+        self.driver = webdriver.Chrome(chromedriver_path, options=chrome_options)
         self.driver.set_window_position(400, 1500)
         self.driver.maximize_window()
         self.driver.get("https://web.telegram.org/k/")
 
-    def __auth_active_account(self):
-        local_storage_path = self.__get_account(self.active_account_name)["tokens"]
-        local_storage = open(local_storage_path, "r", encoding="utf8").readlines()
-        local_storage = list(map(lambda x: x.strip().split("\t"), local_storage))
-
-        for key, value in local_storage:
-            self.set_in_localstorage(key, value)
-
-        self.driver.refresh()
+    def __get_active_account(self):
+        return self.__get_account(self.active_account_name)
 
     def __get_account(self, name):
         account = list(filter(lambda x: x["name"] == name, self.accounts))
         assert len(account), f"Аккаунта с именем {name} не найдено"
         return account[0]
+
 
     def update_used_people(self):
         self.used_people_ids = open(used_people_ids_path, "r").read().split("\n")
@@ -143,7 +146,6 @@ class TelegramMessageSender:
             except Exception as ex:
                 self.__set_next_account_name()
                 self.__set_chromedriver()
-                self.__auth_active_account()
 
     def __run(self):
         time.sleep(10)
