@@ -64,8 +64,8 @@ class TelegramMessageSender:
         profile_name = profile_path.split("/")[-1]
         profile_dir = "/".join(profile_path.split("/")[:-1])
 
-        print("profile_name =", profile_name)
-        print("profile_dir =", profile_dir)
+        print(f"profile_name = '{profile_name}'")
+        print(f"profile_dir ='{profile_dir}'")
 
         chrome_options = Options()
         chrome_options.add_argument(f"--user-data-dir={profile_dir}")
