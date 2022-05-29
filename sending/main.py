@@ -1,18 +1,22 @@
+# -*- coding: cp1251 -*-
+
 import time
 import re
 
 import yaml
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+from sending.names import get_name
 
 chromedriver_path = "./../chromedriver/chromedriver.exe"
 people_ids_path = "people.txt"
 used_people_ids_path = "used_people.txt"
 message = open("message.txt", "r", encoding="utf8").read()
+message_with_name = open("message_with_name.txt", "r", encoding="cp1251").read()
 group_id = open("group_id.txt", "r").read().strip()
 
 
@@ -41,18 +45,18 @@ class TelegramMessageSender:
         active_accounts = list(filter(lambda x: x["status"], self.accounts))
         self.active_accounts_names = list(map(lambda x: x["name"], active_accounts))
 
-        assert len(self.active_accounts_names), "Р’ С„Р°Р№Р»Рµ accounts.yml РЅРµС‚ С…РѕС‚СЏ Р±С‹ РѕРґРЅРѕРіРѕ Р°РєС‚РёРІРЅРѕРіРѕ Р°РєРєР°СѓРЅС‚Р°"
+        assert len(self.active_accounts_names), "В файле accounts.yml нет хотя бы одного активного аккаунта"
 
         self.active_account_name = self.active_accounts_names[0]
-        print("РЈСЃС‚Р°РЅРѕРІР»РµРЅ Р°РєС‚РёРІРЅС‹Р№ Р°РєРєР°СѓРЅС‚. РРјСЏ:", self.active_account_name)
+        print("Установлен активный аккаунт. Имя:", self.active_account_name)
 
     def __set_next_account_name(self):
         self.active_accounts_names.remove(self.active_account_name)
         if not len(self.active_accounts_names):
             self.driver.close()
-            raise BanException("Р’СЃРµ Р°РєС‚РёРІРЅС‹Рµ Р°РєРєР°СѓРЅС‚С‹ Р·Р°РєРѕРЅС‡РёР»РёСЃСЊ")
+            raise BanException("Все активные аккаунты закончились")
         self.active_account_name = self.active_accounts_names[0]
-        print("РЈСЃС‚Р°РЅРѕРІР»РµРЅ Р°РєС‚РёРІРЅС‹Р№ Р°РєРєР°СѓРЅС‚. РРјСЏ:", self.active_account_name)
+        print("Установлен активный аккаунт. Имя:", self.active_account_name)
 
     def __set_chromedriver(self):
         if (self.driver):
@@ -80,9 +84,8 @@ class TelegramMessageSender:
 
     def __get_account(self, name):
         account = list(filter(lambda x: x["name"] == name, self.accounts))
-        assert len(account), f"РђРєРєР°СѓРЅС‚Р° СЃ РёРјРµРЅРµРј {name} РЅРµ РЅР°Р№РґРµРЅРѕ"
+        assert len(account), f"Аккаунта с именем {name} не найдено"
         return account[0]
-
 
     def update_used_people(self):
         self.used_people_ids = open(used_people_ids_path, "r").read().split("\n")
@@ -106,11 +109,16 @@ class TelegramMessageSender:
             return
 
         time.sleep(0.2)
-        self.driver.find_elements_by_class_name("input-message-input")[2].send_keys(message)
+        self.driver.find_elements_by_class_name("input-message-input")[2].send_keys(self.get_message())
         time.sleep(0.5)
         self.driver.find_elements_by_class_name("btn-send")[1].click()
         time.sleep(1)
         self.check_message()
+
+    def get_message(self):
+        user_name = self.driver.find_elements_by_class_name("chat-info")[1].find_element_by_class_name("user-title").text
+        rus_user_name = get_name(user_name)
+        return message_with_name.format(name=rus_user_name) if rus_user_name else message
 
     def is_message_sended(self):
         chat = self.driver.find_elements_by_class_name("bubbles-inner")[1]
@@ -168,13 +176,13 @@ class TelegramMessageSender:
                 except BanException as ex:
                     raise Exception("Ban")
                 except Exception as e:
-                    print("РћС€РёР±РєР° РѕС‚РїСЂР°РІРєРё СЃРѕРѕР±С‰РµРЅРёСЏ. user id = ", user_id)
-                    print("РћС€РёР±РєР°: ", e)
+                    print("Ошибка отправки сообщения. user id = ", user_id)
+                    print("Ошибка: ", e)
                     print("\n\n")
             else:
-                print("РџРѕР»СЊР·РѕРІР°С‚РµР»СЋ СѓР¶Рµ Р±С‹Р»Рѕ РѕС‚РїСЂР°РІР»РµРЅРѕ СЃРѕРѕР±С‰РµРЅРёРµ. user id = ", user_id)
+                print("Пользователю уже было отправлено сообщение. user id = ", user_id)
 
-        print("Р’СЃС‘!")
+        print("Всё!")
 
     def open_group(self):
         while True:
@@ -209,7 +217,7 @@ class TelegramMessageSender:
             last_counts.append(len(people_ids))
 
             if len(last_counts) > 2 and last_counts[-1] == 0 and last_counts[-2] == 0 and last_counts[-3] == 0:
-                raise Exception("РќРµ РѕСЃС‚Р°Р»РѕСЃСЊ Р±РѕР»СЊС€Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РєРѕРјСѓ РјРѕР¶РЅРѕ РѕС‚РїСЂР°РІРёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ")
+                raise Exception("Не осталось больше пользователей кому можно отправить сообщение")
 
             if len(last_counts) > 2 and last_counts[-1] == last_counts[-2] and last_counts[-2] == last_counts[-3]:
                 return people_ids
@@ -253,7 +261,7 @@ class TelegramMessageSender:
             users_count.append(len(users))
 
             if len(users_count) >= 3 and users_count[-1] == users_count[-2] and users_count[-2] == users_count[-3]:
-                raise Exception("РџРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµС‚ РІ СЃРїРёСЃРєРµ СѓС‡Р°СЃС‚РЅРёРєРѕРІ РіСЂСѓРїРїС‹. user id = ", user_id)
+                raise Exception("Пользователя нет в списке участников группы. user id = ", user_id)
 
             self.scroll_to_element(users[-1])
             time.sleep(1)
