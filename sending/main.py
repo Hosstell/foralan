@@ -10,7 +10,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from sending.names import get_name
+from names import get_name
 
 chromedriver_path = "./../chromedriver/chromedriver.exe"
 people_ids_path = "people.txt"
