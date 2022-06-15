@@ -1,5 +1,5 @@
 # -*- coding: cp1251 -*-
-
+import random
 import time
 import re
 import glob
@@ -64,6 +64,46 @@ class Messenger:
             return self.get_message_with_name()
 
 
+class MessagerPlus(Messenger):
+    def __init__(self):
+        super(MessagerPlus, self).__init__()
+
+    def handler(self, text):
+        map_ = {
+            "а": "a",
+            "В": "B",
+            "с": "c",
+            "С": "C",
+            "Е": "E",
+            "е": "e",
+            "К": "K",
+            "М": "M",
+            "Н": "H",
+            "О": "O",
+            "о": "o",
+            "Р": "P",
+            "р": "p",
+            "Т": "T",
+            "у": "y",
+            "Х": "X",
+            "х": "x",
+        }
+        keys = map_.keys()
+        text = list(text)
+        for i in range(len(text)):
+            if text[i] in keys:
+                if random.random() > 0.5:
+                    text[i] = map_[text[i]]
+        return "".join(text)
+
+    def get_message(self):
+        return self.handler(super(MessagerPlus, self).get_message())
+
+    def get_message_with_name(self):
+        return self.handler(super(MessagerPlus, self).get_message_with_name())
+
+
+
 class BanException(Exception):
     pass
 
@@ -76,7 +116,7 @@ class TelegramMessageSender:
         self.driver = None
         self.active_chat_index = 0
         self.used_people_ids = []
-        self.messenger = Messenger()
+        self.messenger = MessagerPlus()
 
         self.__parse_accounts_yml()
         self.__set_chromedriver()
