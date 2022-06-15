@@ -2,6 +2,7 @@
 
 import time
 import re
+import glob
 
 import yaml
 from selenium import webdriver
@@ -20,6 +21,49 @@ message_with_name = open("message_with_name.txt", "r", encoding="cp1251").read()
 group_id = open("group_id.txt", "r").read().strip()
 
 
+class Messenger:
+    def __init__(self):
+        self.current_message_index_filename = "current_message_index.txt"
+        self.current_message_with_name_index_filename = "current_message_with_name_index.txt"
+        self.current_message_index = 0
+        self.current_message_with_name_index = 0
+
+    def get_index(self, filename):
+        try:
+            return int(open(filename, 'r').read())
+        except:
+            file = open(filename, 'w')
+            file.write("0")
+            file.close()
+            return 0
+
+    def get_message(self):
+        try:
+            file = glob.glob('./messages/*')[self.current_message_index_filename]
+            message = open(file, 'r').read()
+            self.current_message_index_filename += 1
+            return message
+        except:
+            if self.current_message_index_filename == 0:
+                raise Exception("Нет сообщений в папке")
+
+            self.current_message_index_filename = 0
+            return self.get_message()
+
+    def get_message_with_name(self):
+        try:
+            file = glob.glob('./messages_with_names/*')[self.current_message_with_name_index_filename]
+            message = open(file, 'r').read()
+            self.current_message_with_name_index_filename += 1
+            return message
+        except:
+            if self.current_message_with_name_index_filename == 0:
+                raise Exception("Нет сообщений в папке")
+
+            self.current_message_with_name_index_filename = 0
+            return self.get_message_with_name()
+
+
 class BanException(Exception):
     pass
 
@@ -32,8 +76,7 @@ class TelegramMessageSender:
         self.driver = None
         self.active_chat_index = 0
         self.used_people_ids = []
-        self.people_ids = open(people_ids_path, 'r').read().split("\n")
-        self.people_load_status = [False for _ in range(len(self.people_ids))]
+        self.messenger = Messenger()
 
         self.__parse_accounts_yml()
         self.__set_chromedriver()
@@ -118,7 +161,7 @@ class TelegramMessageSender:
     def get_message(self):
         user_name = self.driver.find_elements_by_class_name("chat-info")[1].find_element_by_class_name("user-title").text
         rus_user_name = get_name(user_name)
-        return message_with_name.format(name=rus_user_name) if rus_user_name else message
+        return self.messenger.get_message_with_name().format(name=rus_user_name) if rus_user_name else self.messenger.get_message()
 
     def is_message_sended(self):
         chat = self.driver.find_elements_by_class_name("bubbles-inner")[1]
@@ -238,33 +281,6 @@ class TelegramMessageSender:
         self.set_attribute(user_item, "data-peer-id", user_id)
         self.scroll_to_element(user_item)
         user_item.click()
-
-    def load_user(self, user_id):
-        index = self.people_ids.index(user_id)
-        if self.people_load_status[index]:
-            return
-
-        users_count = []
-        while True:
-            users_list = self.driver.find_element_by_class_name("search-super-content-members")
-            ids = self.get_ids(users_list)
-            for id_ in ids:
-                if id_ in self.people_ids:
-                    index = self.people_ids.index(id_)
-                    self.people_load_status[index] = True
-
-            index = self.people_ids.index(user_id)
-            if self.people_load_status[index]:
-                return
-
-            users = users_list.find_elements_by_class_name("chatlist-chat")
-            users_count.append(len(users))
-
-            if len(users_count) >= 3 and users_count[-1] == users_count[-2] and users_count[-2] == users_count[-3]:
-                raise Exception("Пользователя нет в списке участников группы. user id = ", user_id)
-
-            self.scroll_to_element(users[-1])
-            time.sleep(1)
 
     def clone_element(self, element, into=None):
         if into:
