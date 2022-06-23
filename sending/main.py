@@ -16,8 +16,6 @@ from names import get_name
 chromedriver_path = "./../chromedriver/chromedriver.exe"
 people_ids_path = "people.txt"
 used_people_ids_path = "used_people.txt"
-message = open("message.txt", "r", encoding="utf8").read()
-message_with_name = open("message_with_name.txt", "r", encoding="cp1251").read()
 group_id = open("group_id.txt", "r").read().strip()
 
 
