@@ -1,3 +1,6 @@
 ./chromedriver/chromedriver.exe
 ./sending/accounts/*
+./sending/messages/*
+./sending/messages_with_names/*
 ./parsing/account.txt
+./sending/accounts.yml

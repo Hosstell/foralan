@@ -40,7 +40,7 @@ class Messenger:
     def get_message(self):
         try:
             file = glob.glob('./messages/*')[self.current_message_index_filename]
-            message = open(file, 'r').read()
+            message = open(file, 'r', encoding="cp1251").read()
             self.current_message_index_filename += 1
             return message
         except:
@@ -53,7 +53,7 @@ class Messenger:
     def get_message_with_name(self):
         try:
             file = glob.glob('./messages_with_names/*')[self.current_message_with_name_index_filename]
-            message = open(file, 'r').read()
+            message = open(file, 'r', encoding="cp1251").read()
             self.current_message_with_name_index_filename += 1
             return message
         except:
