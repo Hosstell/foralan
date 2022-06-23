@@ -10,6 +10,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.keys import Keys
 
 from names import get_name
 
@@ -190,11 +191,22 @@ class TelegramMessageSender:
             return
 
         time.sleep(0.2)
-        self.driver.find_elements_by_class_name("input-message-input")[2].send_keys(self.get_message())
+        message = self.get_message()
+        self.put_text_to_input(message)
         time.sleep(0.5)
         self.driver.find_elements_by_class_name("btn-send")[1].click()
         time.sleep(1)
         self.check_message()
+
+    def put_text_to_input(self, message):
+        for part in message.split("\n"):
+            self.driver.find_elements_by_class_name("input-message-input")[2].send_keys(part)
+            ActionChains(self.driver)\
+                .key_down(Keys.SHIFT)\
+                .key_down(Keys.ENTER)\
+                .key_up(Keys.SHIFT)\
+                .key_up(Keys.ENTER)\
+                .perform()
 
     def get_message(self):
         user_name = self.driver.find_elements_by_class_name("chat-info")[1].find_element_by_class_name("user-title").text
