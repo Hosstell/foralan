@@ -187,10 +187,11 @@ class TelegramMessageSender:
         self.update_used_people()
 
     def send_message(self, user_id):
+        time.sleep(0.5)
         if self.is_message_sended():
             return
 
-        time.sleep(0.2)
+        time.sleep(1)
         message = self.get_message()
         self.put_text_to_input(message)
         time.sleep(0.5)
@@ -201,12 +202,14 @@ class TelegramMessageSender:
     def put_text_to_input(self, message):
         for part in message.split("\n"):
             self.driver.find_elements_by_class_name("input-message-input")[2].send_keys(part)
+            time.sleep(2)
             ActionChains(self.driver)\
                 .key_down(Keys.SHIFT)\
                 .key_down(Keys.ENTER)\
                 .key_up(Keys.SHIFT)\
                 .key_up(Keys.ENTER)\
                 .perform()
+        time.sleep(2)
 
     def get_message(self):
         user_name = self.driver.find_elements_by_class_name("chat-info")[1].find_element_by_class_name("user-title").text
@@ -214,7 +217,10 @@ class TelegramMessageSender:
         return self.messenger.get_message_with_name().format(name=rus_user_name) if rus_user_name else self.messenger.get_message()
 
     def is_message_sended(self):
-        chat = self.driver.find_elements_by_class_name("bubbles-inner")[1]
+        chat = self.driver.find_elements_by_class_name("bubbles-inner")
+        if len(chat) < 2:
+            return False
+        chat = chat[1]
         message = chat.find_elements_by_class_name("inner")
         return len(message)
 
@@ -271,6 +277,7 @@ class TelegramMessageSender:
                 except Exception as e:
                     print("Ошибка отправки сообщения. user id = ", user_id)
                     print("Ошибка: ", e)
+                    raise Exception(e)
                     print("\n\n")
             else:
                 print("Пользователю уже было отправлено сообщение. user id = ", user_id)
