@@ -307,6 +307,8 @@ class TelegramMessageSender:
 
         people_ids = []
         last_counts = []
+
+        try_count = 0
         while True:
             ids = self.get_current_people_ids()
             ids = list(set(ids).difference(set(self.used_people_ids)))
@@ -316,13 +318,14 @@ class TelegramMessageSender:
 
             last_counts.append(len(people_ids))
 
-            if len(last_counts) > 2 and last_counts[-1] == 0 and last_counts[-2] == 0 and last_counts[-3] == 0:
+            if try_count > 15:
                 raise Exception("Не осталось больше пользователей кому можно отправить сообщение")
 
             if len(last_counts) > 2 and last_counts[-1] == last_counts[-2] and last_counts[-2] == last_counts[-3]:
                 return people_ids
 
             self.scroll_to_element(self.get_current_people()[-1])
+            try_count += 1
             time.sleep(0.3)
 
     def get_current_people(self):
