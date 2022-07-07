@@ -187,7 +187,7 @@ class TelegramMessageSender:
         self.update_used_people()
 
     def send_message(self, user_id):
-        time.sleep(0.5)
+        time.sleep(2)
         if self.is_message_sended():
             return
 
